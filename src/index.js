@@ -8,11 +8,17 @@ const webhookRoutes = require('./routes/webhook');
 
 const app = express();
 
+// Render runs behind a reverse proxy — needed for rate limiting to see real IPs
+app.set('trust proxy', 1);
+
 const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow: Chrome extensions, no-origin (server-to-server / webhooks), and explicit allowlist
+    if (!origin) return callback(null, true);                           // webhooks, curl, etc.
+    if (origin.startsWith('chrome-extension://')) return callback(null, true);  // any extension
     if (allowedOrigin === '*') return callback(null, true);
-    if (!origin || origin === allowedOrigin) return callback(null, true);
+    if (origin === allowedOrigin) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
