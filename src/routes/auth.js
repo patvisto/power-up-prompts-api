@@ -13,8 +13,6 @@ const limiter = rateLimit({
 });
 
 // ── POST /api/auth/check ──────────────────────────────────────────────────────
-// Step 1: check if email is whitelisted and whether a password has been set.
-// Returns status: 'no_access' | 'setup_required' | 'ready'
 router.post('/check', limiter, async (req, res) => {
   const { email } = req.body;
   if (!email || !email.includes('@')) {
@@ -25,7 +23,7 @@ router.post('/check', limiter, async (req, res) => {
 
   const { data, error } = await supabase
     .from('whitelisted_emails')
-    .select('email, password_hash')
+    .select('email, password_hash, is_admin')
     .eq('email', normalised)
     .maybeSingle();
 
@@ -43,7 +41,6 @@ router.post('/check', limiter, async (req, res) => {
 });
 
 // ── POST /api/auth/setup ──────────────────────────────────────────────────────
-// First-time password creation. Only works if no password is set yet.
 router.post('/setup', limiter, async (req, res) => {
   const { email, password } = req.body;
 
@@ -58,7 +55,7 @@ router.post('/setup', limiter, async (req, res) => {
 
   const { data, error } = await supabase
     .from('whitelisted_emails')
-    .select('email, password_hash')
+    .select('email, password_hash, is_admin')
     .eq('email', normalised)
     .maybeSingle();
 
@@ -81,8 +78,8 @@ router.post('/setup', limiter, async (req, res) => {
     return res.status(500).json({ error: 'Failed to save password. Please try again.' });
   }
 
-  const token = issueToken(normalised, req.body.remember);
-  res.json({ token, email: normalised });
+  const token = issueToken(normalised, req.body.remember, data.is_admin);
+  res.json({ token, email: normalised, is_admin: data.is_admin || false });
 });
 
 // ── POST /api/auth/login ──────────────────────────────────────────────────────
@@ -97,7 +94,7 @@ router.post('/login', limiter, async (req, res) => {
 
   const { data, error } = await supabase
     .from('whitelisted_emails')
-    .select('email, password_hash')
+    .select('email, password_hash, is_admin')
     .eq('email', normalised)
     .maybeSingle();
 
@@ -113,14 +110,13 @@ router.post('/login', limiter, async (req, res) => {
     return res.status(401).json({ error: 'Incorrect password. Please try again.' });
   }
 
-  const token = issueToken(normalised, req.body.remember);
-  res.json({ token, email: normalised });
+  const token = issueToken(normalised, req.body.remember, data.is_admin);
+  res.json({ token, email: normalised, is_admin: data.is_admin || false });
 });
 
-function issueToken(email, remember) {
-  // remember=true → 30 days, remember=false/undefined → 8 hours
+function issueToken(email, remember, isAdmin = false) {
   const expiresIn = remember ? '30d' : '8h';
-  return jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn });
+  return jwt.sign({ email, is_admin: isAdmin }, process.env.JWT_SECRET, { expiresIn });
 }
 
 module.exports = router;
