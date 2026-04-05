@@ -124,11 +124,25 @@ router.post('/reset-password/:email', requireAdmin, async (req, res) => {
 
   const { error } = await supabase
     .from('users')
-    .update({ password_hash: null, reset_token: null, reset_token_expires_at: null })
+    .update({ password_hash: null })
     .eq('email', email);
 
   if (error) return res.status(500).json({ error: error.message });
   res.json({ message: `Password cleared for ${email}. User will be prompted to set a new one.` });
+});
+
+// ── POST /api/admin/reset-pin/:email ──────────────────────────────────────────
+// Clears pin_hash so the user is prompted to set a new PIN on next setup
+router.post('/reset-pin/:email', requireAdmin, async (req, res) => {
+  const email = decodeURIComponent(req.params.email).toLowerCase();
+
+  const { error } = await supabase
+    .from('users')
+    .update({ pin_hash: null })
+    .eq('email', email);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ message: `Recovery PIN cleared for ${email}.` });
 });
 
 module.exports = router;

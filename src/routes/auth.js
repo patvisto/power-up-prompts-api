@@ -1,10 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const supabase = require('../services/supabase');
-const { sendOtpEmail } = require('../services/email');
 
 const router = express.Router();
 
@@ -14,15 +12,14 @@ const limiter = rateLimit({
   message: { error: 'Too many attempts. Please wait 15 minutes.' }
 });
 
-// Stricter limiter for password reset to prevent abuse
-const resetLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+// Stricter limiter for PIN verification to prevent brute force
+const pinLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
   max: 5,
-  message: { error: 'Too many reset attempts. Please wait an hour.' }
+  message: { error: 'Too many PIN attempts. Please wait 15 minutes.' }
 });
 
 // ── POST /api/auth/check ──────────────────────────────────────────────────────
-// Anyone can check — returns 'ready' or 'setup_required' (no whitelist)
 router.post('/check', limiter, async (req, res) => {
   const { email } = req.body;
   if (!email || !email.includes('@')) {
@@ -37,22 +34,23 @@ router.post('/check', limiter, async (req, res) => {
     .eq('email', normalised)
     .maybeSingle();
 
-  // User exists with password → ready to login
-  // User doesn't exist OR has no password → needs setup
   const status = data?.password_hash ? 'ready' : 'setup_required';
   res.json({ status });
 });
 
 // ── POST /api/auth/setup ──────────────────────────────────────────────────────
-// Open registration — create account or set password, no whitelist needed
+// Open registration — create account with password + recovery PIN
 router.post('/setup', limiter, async (req, res) => {
-  const { email, password, remember } = req.body;
+  const { email, password, pin, remember } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
   if (password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  }
+  if (!pin || !/^\d{6}$/.test(pin)) {
+    return res.status(400).json({ error: 'A 6-digit recovery PIN is required.' });
   }
 
   const normalised = email.trim().toLowerCase();
@@ -67,25 +65,24 @@ router.post('/setup', limiter, async (req, res) => {
     return res.status(409).json({ error: 'Password already set. Please sign in.' });
   }
 
-  const hash = await bcrypt.hash(password, 12);
+  const passwordHash = await bcrypt.hash(password, 12);
+  const pinHash = await bcrypt.hash(pin, 10);
 
   let userData;
 
   if (existing) {
-    // User exists but no password yet — set it
     const { data, error } = await supabase
       .from('users')
-      .update({ password_hash: hash })
+      .update({ password_hash: passwordHash, pin_hash: pinHash })
       .eq('email', normalised)
       .select('is_admin, powerups_used, is_subscribed')
       .single();
     if (error) return res.status(500).json({ error: 'Failed to save password.' });
     userData = data;
   } else {
-    // Brand new user — create account
     const { data, error } = await supabase
       .from('users')
-      .insert({ email: normalised, password_hash: hash })
+      .insert({ email: normalised, password_hash: passwordHash, pin_hash: pinHash })
       .select('is_admin, powerups_used, is_subscribed')
       .single();
     if (error) return res.status(500).json({ error: 'Failed to create account.' });
@@ -143,86 +140,30 @@ router.post('/login', limiter, async (req, res) => {
   });
 });
 
-// ── POST /api/auth/forgot-password ───────────────────────────────────────────
-// Generates a 6-digit OTP, stores SHA-256 hash + expiry, sends email
-router.post('/forgot-password', resetLimiter, async (req, res) => {
-  const { email } = req.body;
-  if (!email || !email.includes('@')) {
-    return res.status(400).json({ error: 'A valid email address is required.' });
+// ── POST /api/auth/verify-pin ────────────────────────────────────────────────
+// Verifies the 6-digit recovery PIN and returns a short-lived reset JWT
+router.post('/verify-pin', pinLimiter, async (req, res) => {
+  const { email, pin } = req.body;
+  if (!email || !pin) {
+    return res.status(400).json({ error: 'Email and PIN are required.' });
   }
 
   const normalised = email.trim().toLowerCase();
 
   const { data } = await supabase
     .from('users')
-    .select('email, password_hash')
+    .select('pin_hash')
     .eq('email', normalised)
     .maybeSingle();
 
-  // Always return success — don't reveal whether an email is registered
-  if (!data || !data.password_hash) {
-    return res.json({ success: true });
+  if (!data || !data.pin_hash) {
+    return res.status(400).json({ error: 'No recovery PIN set for this account.' });
   }
 
-  // Generate 6-digit OTP
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const tokenHash = crypto.createHash('sha256').update(otp).digest('hex');
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-
-  const { error: updateError } = await supabase
-    .from('users')
-    .update({ reset_token: tokenHash, reset_token_expires_at: expiresAt.toISOString() })
-    .eq('email', normalised);
-
-  if (updateError) {
-    console.error('Reset token save error:', updateError);
-    return res.status(500).json({ error: 'Failed to process request. Please try again.' });
+  const match = await bcrypt.compare(pin.trim(), data.pin_hash);
+  if (!match) {
+    return res.status(401).json({ error: 'Incorrect PIN. Please try again.' });
   }
-
-  try {
-    await sendOtpEmail(normalised, otp);
-  } catch (e) {
-    console.error('Email send error:', e);
-    return res.status(500).json({ error: 'Failed to send email. Please try again.' });
-  }
-
-  res.json({ success: true });
-});
-
-// ── POST /api/auth/verify-reset-otp ─────────────────────────────────────────
-// Verifies OTP and returns a short-lived reset JWT
-router.post('/verify-reset-otp', resetLimiter, async (req, res) => {
-  const { email, otp } = req.body;
-  if (!email || !otp) {
-    return res.status(400).json({ error: 'Email and code are required.' });
-  }
-
-  const normalised = email.trim().toLowerCase();
-
-  const { data } = await supabase
-    .from('users')
-    .select('reset_token, reset_token_expires_at')
-    .eq('email', normalised)
-    .maybeSingle();
-
-  if (!data || !data.reset_token) {
-    return res.status(400).json({ error: 'No reset request found. Please request a new code.' });
-  }
-
-  if (new Date(data.reset_token_expires_at) < new Date()) {
-    return res.status(400).json({ error: 'Code has expired. Please request a new one.' });
-  }
-
-  const hash = crypto.createHash('sha256').update(otp.trim()).digest('hex');
-  if (hash !== data.reset_token) {
-    return res.status(400).json({ error: 'Incorrect code. Please check and try again.' });
-  }
-
-  // Clear the used OTP
-  await supabase
-    .from('users')
-    .update({ reset_token: null, reset_token_expires_at: null })
-    .eq('email', normalised);
 
   // Issue short-lived reset-only JWT (15 min)
   const resetToken = jwt.sign(
@@ -235,7 +176,7 @@ router.post('/verify-reset-otp', resetLimiter, async (req, res) => {
 });
 
 // ── POST /api/auth/reset-password ────────────────────────────────────────────
-// Sets a new password using the reset JWT
+// Sets a new password using the reset JWT from verify-pin
 router.post('/reset-password', async (req, res) => {
   const { reset_token, password } = req.body;
   if (!reset_token || !password) {
