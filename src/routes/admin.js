@@ -117,4 +117,18 @@ router.post('/reset-powerups/:email', requireAdmin, async (req, res) => {
   res.json({ message: `Powerups reset for ${email}.` });
 });
 
+// ── POST /api/admin/reset-password/:email ─────────────────────────────────────
+// Clears password_hash so the user is prompted to set up a new password on next login
+router.post('/reset-password/:email', requireAdmin, async (req, res) => {
+  const email = decodeURIComponent(req.params.email).toLowerCase();
+
+  const { error } = await supabase
+    .from('users')
+    .update({ password_hash: null, reset_token: null, reset_token_expires_at: null })
+    .eq('email', email);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ message: `Password cleared for ${email}. User will be prompted to set a new one.` });
+});
+
 module.exports = router;
