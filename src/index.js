@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const authRoutes    = require('./routes/auth');
@@ -33,6 +34,7 @@ app.use('/api/admin',   adminRoutes);
 app.use('/api/webhook', webhookRoutes);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+app.get('/privacy', (_req, res) => res.sendFile(path.join(__dirname, 'privacy.html')));
 
 app.use((err, _req, res, _next) => {
   console.error(err);

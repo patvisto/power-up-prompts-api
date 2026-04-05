@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Power Up Prompts</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f1117; color: #e8eaf0; line-height: 1.7; }
+    .container { max-width: 680px; margin: 0 auto; padding: 48px 24px; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+    .subtitle { color: #6b7280; font-size: 14px; margin-bottom: 36px; }
+    h2 { font-size: 18px; font-weight: 600; color: #16a34a; margin: 32px 0 12px; }
+    p, li { font-size: 15px; color: #9ca3af; margin-bottom: 12px; }
+    ul { padding-left: 24px; margin-bottom: 12px; }
+    li { margin-bottom: 6px; }
+    strong { color: #e8eaf0; }
+    a { color: #16a34a; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid #252836; color: #6b7280; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Privacy Policy</h1>
+    <p class="subtitle">Power Up Prompts — Chrome Extension<br>Last updated: April 5, 2026</p>
+
+    <h2>1. What We Collect</h2>
+    <p>We collect only what is necessary to provide the service:</p>
+    <ul>
+      <li><strong>Email address</strong> — used for account creation and login.</li>
+      <li><strong>Password</strong> — stored as a secure bcrypt hash. We never store or see your plain-text password.</li>
+      <li><strong>Recovery PIN</strong> — stored as a secure bcrypt hash, used only for password reset.</li>
+      <li><strong>Prompts you submit</strong> — sent to our server for AI enhancement, then immediately discarded. We do not store or log your prompts.</li>
+      <li><strong>Usage counts</strong> — we track how many powerups you have used to enforce free-tier and subscription limits.</li>
+    </ul>
+
+    <h2>2. What We Do NOT Collect</h2>
+    <ul>
+      <li>Browsing history or website content</li>
+      <li>Personal or financial information beyond your email</li>
+      <li>Cookies or tracking data</li>
+      <li>Data from other tabs, pages, or extensions</li>
+    </ul>
+
+    <h2>3. How We Use Your Data</h2>
+    <ul>
+      <li><strong>Authentication</strong> — your email and password hash are used solely to sign you in.</li>
+      <li><strong>Prompt enhancement</strong> — your prompt text is sent to a third-party AI service (Groq) for processing. Groq's privacy policy applies to that processing. Prompts are not stored on our servers.</li>
+      <li><strong>Subscription management</strong> — we track whether you have an active subscription and your usage within rate limits.</li>
+    </ul>
+
+    <h2>4. Data Storage</h2>
+    <ul>
+      <li>Account data is stored in a secure database hosted on <strong>Supabase</strong> (cloud PostgreSQL).</li>
+      <li>Your login session token is stored locally in your browser using Chrome's <code>chrome.storage.local</code> API.</li>
+      <li>No data is stored in cookies.</li>
+    </ul>
+
+    <h2>5. Third-Party Services</h2>
+    <ul>
+      <li><strong>Groq</strong> — processes your prompts for AI enhancement. <a href="https://groq.com/privacy-policy/" target="_blank">Groq Privacy Policy</a></li>
+      <li><strong>Supabase</strong> — hosts our database. <a href="https://supabase.com/privacy" target="_blank">Supabase Privacy Policy</a></li>
+      <li><strong>Render</strong> — hosts our backend server. <a href="https://render.com/privacy" target="_blank">Render Privacy Policy</a></li>
+    </ul>
+
+    <h2>6. Data Sharing</h2>
+    <p>We do <strong>not</strong> sell, trade, or share your personal information with any third parties for marketing or advertising purposes. Data is only shared with the third-party services listed above as required to operate the extension.</p>
+
+    <h2>7. Data Retention</h2>
+    <p>Your account data is retained as long as your account is active. You may request account deletion by contacting us at the email below. Upon deletion, all associated data will be permanently removed from our database.</p>
+
+    <h2>8. Security</h2>
+    <p>We use industry-standard security measures including encrypted connections (HTTPS), bcrypt password hashing, JWT authentication tokens, and rate limiting to protect against unauthorized access.</p>
+
+    <h2>9. Your Rights</h2>
+    <p>You may:</p>
+    <ul>
+      <li>Request a copy of the data we hold about you</li>
+      <li>Request deletion of your account and all associated data</li>
+      <li>Change your password or recovery PIN at any time</li>
+    </ul>
+
+    <h2>10. Changes to This Policy</h2>
+    <p>We may update this policy from time to time. Changes will be reflected on this page with an updated date. Continued use of the extension after changes constitutes acceptance of the updated policy.</p>
+
+    <h2>11. Contact</h2>
+    <p>For questions or requests regarding your data, contact us at:<br>
+    <a href="mailto:patvisto@gmail.com">patvisto@gmail.com</a></p>
+
+    <div class="footer">
+      &copy; 2026 Power Up Prompts. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>
