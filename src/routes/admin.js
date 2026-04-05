@@ -74,12 +74,17 @@ router.delete('/whitelist/:email', requireAdmin, async (req, res) => {
 });
 
 // ── POST /api/admin/subscribe/:email ─────────────────────────────────────────
-// Grant 1-year subscription to a user
+// Grant subscription — accepts optional { plan: 'monthly' | 'yearly' } body
 router.post('/subscribe/:email', requireAdmin, async (req, res) => {
   const email = decodeURIComponent(req.params.email).toLowerCase();
+  const plan = (req.body?.plan || 'yearly').toLowerCase();
 
   const expiresAt = new Date();
-  expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+  if (plan === 'monthly') {
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+  } else {
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+  }
 
   const { error } = await supabase
     .from('users')
@@ -87,7 +92,7 @@ router.post('/subscribe/:email', requireAdmin, async (req, res) => {
     .eq('email', email);
 
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ message: `Subscription granted to ${email} until ${expiresAt.toDateString()}.` });
+  res.json({ message: `${plan} subscription granted to ${email} until ${expiresAt.toDateString()}.` });
 });
 
 // ── DELETE /api/admin/subscribe/:email ────────────────────────────────────────

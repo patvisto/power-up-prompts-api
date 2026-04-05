@@ -5,13 +5,8 @@ const router = express.Router();
 
 // ── POST /api/webhook/payment ─────────────────────────────────────────────────
 // Generic payment webhook — call this from your payment gateway after a
-// successful payment. Expects { email } in the body.
-//
-// Secure it with the WEBHOOK_SECRET env var — set the same value as the
-// "webhook secret" in your payment gateway dashboard.
-//
-// PayMongo example: add this URL to your PayMongo webhook settings and
-// extract the customer email from the payload before forwarding here.
+// successful payment. Expects { email, plan } in the body.
+// plan: 'monthly' or 'yearly' (defaults to 'yearly' for backward compatibility)
 
 router.post('/payment', async (req, res) => {
   const secret = req.headers['x-webhook-secret'];
@@ -19,7 +14,6 @@ router.post('/payment', async (req, res) => {
     return res.status(401).json({ error: 'Invalid webhook secret.' });
   }
 
-  // Accept email directly or nested in common payment gateway formats
   const email =
     req.body?.email ||
     req.body?.data?.attributes?.billing?.email ||
@@ -29,13 +23,22 @@ router.post('/payment', async (req, res) => {
     return res.status(400).json({ error: 'Email not found in payload.' });
   }
 
+  const plan = (req.body?.plan || 'yearly').toLowerCase();
   const normalised = email.trim().toLowerCase();
   const expiresAt = new Date();
-  expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+  if (plan === 'monthly') {
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+  } else {
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+  }
 
   const { error } = await supabase
     .from('users')
-    .update({ is_subscribed: true, subscription_expires_at: expiresAt.toISOString() })
+    .update({
+      is_subscribed: true,
+      subscription_expires_at: expiresAt.toISOString()
+    })
     .eq('email', normalised);
 
   if (error) {
@@ -43,8 +46,8 @@ router.post('/payment', async (req, res) => {
     return res.status(500).json({ error: 'Failed to update subscription.' });
   }
 
-  console.log(`Subscription granted to ${normalised} via webhook`);
-  res.json({ success: true, message: `Subscription activated for ${normalised}` });
+  console.log(`${plan} subscription granted to ${normalised} via webhook (expires ${expiresAt.toDateString()})`);
+  res.json({ success: true, message: `${plan} subscription activated for ${normalised}`, expires: expiresAt.toISOString() });
 });
 
 module.exports = router;
