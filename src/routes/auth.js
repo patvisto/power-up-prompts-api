@@ -241,7 +241,8 @@ router.get('/status', async (req, res) => {
     email: payload.email,
     is_admin: data.is_admin || false,
     powerups_used: data.powerups_used || 0,
-    is_subscribed: subscribed
+    is_subscribed: subscribed,
+    subscription_expires_at: subscribed ? data.subscription_expires_at : null
   });
 });
 
