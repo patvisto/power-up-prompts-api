@@ -23,10 +23,14 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key', 'x-webhook-secret']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key', 'x-webhook-secret', 'paymongo-signature']
 }));
 
-app.use(express.json({ limit: '16kb' }));
+// Preserve raw body for PayMongo signature verification
+app.use(express.json({
+  limit: '16kb',
+  verify: (req, _res, buf) => { req.rawBody = buf.toString(); }
+}));
 
 app.use('/api/auth',    authRoutes);
 app.use('/api/enhance', enhanceRoutes);
