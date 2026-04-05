@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-const supabase = require('../services/supabase');
 
+// Verifies JWT — no whitelist check, anyone with a valid token can access
 async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -9,26 +9,13 @@ async function requireAuth(req, res, next) {
 
   const token = authHeader.slice(7);
 
-  let payload;
   try {
-    payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = { email: payload.email, is_admin: payload.is_admin || false };
+    next();
   } catch {
     return res.status(401).json({ error: 'Token invalid or expired. Please sign in again.' });
   }
-
-  // Re-check whitelist on every request (catches removed users immediately)
-  const { data, error } = await supabase
-    .from('whitelisted_emails')
-    .select('email')
-    .eq('email', payload.email)
-    .maybeSingle();
-
-  if (error || !data) {
-    return res.status(403).json({ error: 'Access revoked. Contact the administrator.' });
-  }
-
-  req.user = { email: payload.email };
-  next();
 }
 
 module.exports = { requireAuth };
