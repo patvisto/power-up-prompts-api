@@ -3,14 +3,14 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'powerupprompts@gmail.com',
-    pass: 'ckxh wofc rkvc uarj'
+    user: 'patvisto@gmail.com',
+    pass: 'ajrv kymr zjxy ruju'
   }
 });
 
 async function sendOtpEmail(to, otp) {
   await transporter.sendMail({
-    from: '"Power Up Prompts" <powerupprompts@gmail.com>',
+    from: '"Power Up Prompts" <patvisto@gmail.com>',
     to,
     subject: 'Your Password Reset Code',
     html: `
