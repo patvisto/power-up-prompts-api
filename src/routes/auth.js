@@ -211,6 +211,40 @@ router.post('/reset-password', async (req, res) => {
   res.json({ success: true, email: payload.email });
 });
 
+// ── GET /api/auth/status ─────────────────────────────────────────────────────
+// Returns the current user status (subscription, powerups) from the database
+router.get('/status', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Not authenticated.' });
+  }
+
+  let payload;
+  try {
+    payload = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET);
+  } catch {
+    return res.status(401).json({ error: 'Token expired.' });
+  }
+
+  const { data } = await supabase
+    .from('users')
+    .select('is_admin, powerups_used, is_subscribed, subscription_expires_at')
+    .eq('email', payload.email)
+    .maybeSingle();
+
+  if (!data) return res.status(404).json({ error: 'User not found.' });
+
+  const subscribed = data.is_subscribed &&
+    (!data.subscription_expires_at || new Date(data.subscription_expires_at) > new Date());
+
+  res.json({
+    email: payload.email,
+    is_admin: data.is_admin || false,
+    powerups_used: data.powerups_used || 0,
+    is_subscribed: subscribed
+  });
+});
+
 function issueToken(email, remember, isAdmin = false) {
   return jwt.sign(
     { email, is_admin: isAdmin },
