@@ -57,12 +57,12 @@ router.post('/payment', async (req, res) => {
     return res.status(400).json({ error: 'No billing email in payment.' });
   }
 
-  // Determine plan from amount (centavos): ₱329 = 32900 (monthly), ₱1329 = 132900 (yearly)
+  // Determine plan from amount (centavos): ₱229 = 22900 (monthly), ₱1329 = 132900 (yearly)
   const amount =
     paymentAttrs.amount ||
     paymentAttrs.payments?.[0]?.data?.attributes?.amount || 0;
 
-  const plan = (amount > 0 && amount <= 35000) ? 'monthly' : 'yearly';
+  const plan = (amount > 0 && amount <= 25000) ? 'monthly' : 'yearly';
   const normalised = email.trim().toLowerCase();
 
   console.log(`Payment: ${normalised}, amount: ${amount} centavos, plan: ${plan}`);

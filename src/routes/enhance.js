@@ -7,7 +7,7 @@ const supabase = require('../services/supabase');
 const router = express.Router();
 
 const FREE_LIMIT    = 5;
-const WINDOW_LIMIT  = 50;           // max powerups per window
+const WINDOW_LIMIT  = 30;           // max powerups per window
 const WINDOW_HOURS  = 4;            // cooldown window in hours
 
 const enhanceLimiter = rateLimit({
