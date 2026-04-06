@@ -57,12 +57,24 @@ router.post('/payment', async (req, res) => {
     return res.status(400).json({ error: 'No billing email in payment.' });
   }
 
-  // Determine plan from amount (centavos): ₱229 = 22900 (monthly), ₱1329 = 132900 (yearly)
+  // Only process exact Power Up Prompts amounts (centavos)
+  const MONTHLY_AMOUNT = 22900;  // ₱229 (₱199 + fees)
+  const YEARLY_AMOUNT  = 132900; // ₱1329 (₱1299 + fees)
+
   const amount =
     paymentAttrs.amount ||
     paymentAttrs.payments?.[0]?.data?.attributes?.amount || 0;
 
-  const plan = (amount > 0 && amount <= 25000) ? 'monthly' : 'yearly';
+  let plan;
+  if (amount === MONTHLY_AMOUNT) {
+    plan = 'monthly';
+  } else if (amount === YEARLY_AMOUNT) {
+    plan = 'yearly';
+  } else {
+    console.log(`Webhook: ignoring payment with unrecognized amount: ${amount} centavos`);
+    return res.json({ success: true, message: `Ignored: amount ${amount} not a Power Up Prompts plan.` });
+  }
+
   const normalised = email.trim().toLowerCase();
 
   console.log(`Payment: ${normalised}, amount: ${amount} centavos, plan: ${plan}`);
