@@ -46,4 +46,12 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Power Up Prompts API running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Power Up Prompts API running on port ${PORT}`);
+
+  // Self-ping every 10 minutes to keep the server responsive on Render
+  const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  setInterval(() => {
+    fetch(`${SELF_URL}/health`).catch(() => {});
+  }, 10 * 60 * 1000);
+});
