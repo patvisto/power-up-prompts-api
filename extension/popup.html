@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Power Up Prompts</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-icon">&#9889;</div>
+      <div class="header-text">
+        <h1 class="header-title">Power Up Prompts</h1>
+        <p class="header-subtitle" id="headerSubtitle">Sign in to continue</p>
+      </div>
+      <div class="header-actions">
+        <button id="adminBtn" class="btn-header hidden" title="Manage Users">&#128101;</button>
+        <button id="signOutBtn" class="btn-signout hidden" title="Sign out">&#x2715;</button>
+      </div>
+    </header>
+
+    <!-- ── VIEW: Email ─────────────────────────────────────────── -->
+    <section id="viewEmail" class="view">
+      <p class="view-desc">Enter your email to sign in or create an account.</p>
+      <div class="field">
+        <label class="label" for="emailInput">Email address</label>
+        <input id="emailInput" type="email" class="input"
+          placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div id="emailError" class="error-msg hidden"></div>
+      <button id="continueBtn" class="btn-primary">
+        <span id="continueLabel">Continue</span>
+        <span id="continueSpinner" class="spinner hidden"></span>
+      </button>
+    </section>
+
+    <!-- ── VIEW: Setup password ────────────────────────────────── -->
+    <section id="viewSetup" class="view hidden">
+      <p class="view-desc">
+        Create a password for <strong id="setupEmailDisplay"></strong>
+      </p>
+      <div class="field">
+        <label class="label" for="setupPassword">Create password</label>
+        <div class="input-wrap">
+          <input id="setupPassword" type="password" class="input"
+            placeholder="Min. 8 characters" autocomplete="new-password" />
+          <button class="btn-eye" data-target="setupPassword" tabindex="-1">&#128065;</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label" for="setupConfirm">Confirm password</label>
+        <div class="input-wrap">
+          <input id="setupConfirm" type="password" class="input"
+            placeholder="Re-enter password" autocomplete="new-password" />
+          <button class="btn-eye" data-target="setupConfirm" tabindex="-1">&#128065;</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label" for="setupPin">Recovery PIN</label>
+        <input id="setupPin" type="text" class="input input-code"
+          placeholder="6 digits" maxlength="6" inputmode="numeric" pattern="[0-9]*"
+          autocomplete="off" />
+        <p class="field-hint">Remember this PIN — you'll need it to reset your password.</p>
+      </div>
+      <label class="checkbox-label">
+        <input type="checkbox" id="setupRemember" checked />
+        <span>Keep me logged in</span>
+      </label>
+      <div id="setupError" class="error-msg hidden"></div>
+      <button id="createAccountBtn" class="btn-primary">
+        <span id="createAccountLabel">Create Account</span>
+        <span id="createAccountSpinner" class="spinner hidden"></span>
+      </button>
+      <button class="btn-ghost" id="backFromSetup">Use a different email</button>
+    </section>
+
+    <!-- ── VIEW: Login ─────────────────────────────────────────── -->
+    <section id="viewLogin" class="view hidden">
+      <p class="view-desc">Welcome back, <strong id="loginEmailDisplay"></strong></p>
+      <div class="field">
+        <label class="label" for="loginPassword">Password</label>
+        <div class="input-wrap">
+          <input id="loginPassword" type="password" class="input"
+            placeholder="Your password" autocomplete="current-password" />
+          <button class="btn-eye" data-target="loginPassword" tabindex="-1">&#128065;</button>
+        </div>
+      </div>
+      <label class="checkbox-label">
+        <input type="checkbox" id="loginRemember" checked />
+        <span>Keep me logged in</span>
+      </label>
+      <div id="loginError" class="error-msg hidden"></div>
+      <button id="signInBtn" class="btn-primary">
+        <span id="signInLabel">Sign In</span>
+        <span id="signInSpinner" class="spinner hidden"></span>
+      </button>
+      <div class="auth-links">
+        <button class="btn-ghost" id="backFromLogin">Use a different email</button>
+        <button class="btn-ghost" id="forgotPasswordBtn">Forgot password?</button>
+      </div>
+    </section>
+
+    <!-- ── VIEW: Verify PIN ────────────────────────────────────── -->
+    <section id="viewVerifyPin" class="view hidden">
+      <p class="view-desc">
+        Enter your 6-digit recovery PIN for <strong id="pinEmailDisplay"></strong>
+      </p>
+      <div class="field">
+        <label class="label" for="pinInput">Recovery PIN</label>
+        <input id="pinInput" type="text" class="input input-code"
+          placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*"
+          autocomplete="off" />
+      </div>
+      <div id="pinError" class="error-msg hidden"></div>
+      <button id="verifyPinBtn" class="btn-primary">
+        <span id="verifyPinLabel">Verify PIN</span>
+        <span id="verifyPinSpinner" class="spinner hidden"></span>
+      </button>
+      <button class="btn-ghost" id="backFromPin">Back to sign in</button>
+    </section>
+
+    <!-- ── VIEW: New password ──────────────────────────────────── -->
+    <section id="viewNewPassword" class="view hidden">
+      <p class="view-desc">Create a new password for your account.</p>
+      <div class="field">
+        <label class="label" for="newPassword">New password</label>
+        <div class="input-wrap">
+          <input id="newPassword" type="password" class="input"
+            placeholder="Min. 8 characters" autocomplete="new-password" />
+          <button class="btn-eye" data-target="newPassword" tabindex="-1">&#128065;</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label" for="newPasswordConfirm">Confirm new password</label>
+        <div class="input-wrap">
+          <input id="newPasswordConfirm" type="password" class="input"
+            placeholder="Re-enter password" autocomplete="new-password" />
+          <button class="btn-eye" data-target="newPasswordConfirm" tabindex="-1">&#128065;</button>
+        </div>
+      </div>
+      <div id="newPasswordError" class="error-msg hidden"></div>
+      <button id="setPasswordBtn" class="btn-primary">
+        <span id="setPasswordLabel">Set New Password</span>
+        <span id="setPasswordSpinner" class="spinner hidden"></span>
+      </button>
+    </section>
+
+    <!-- ── VIEW: Main App ──────────────────────────────────────── -->
+    <section id="viewMain" class="view hidden">
+      <div class="field">
+        <label class="label" for="promptInput">Your prompt</label>
+        <textarea id="promptInput" class="textarea"
+          placeholder="e.g. fix my python function&#10;write a story about space&#10;explain machine learning to a beginner"
+          rows="4" spellcheck="true" maxlength="2000"></textarea>
+        <div class="char-count"><span id="charCount">0</span> / 2000</div>
+      </div>
+
+      <!-- Powerup button (visible when limit NOT reached) -->
+      <button id="enhanceBtn" class="btn-primary">
+        <span class="btn-icon" id="enhanceBtnIcon">&#9889;</span>
+        <span id="enhanceLabel">Power Up Prompt</span>
+        <span id="enhanceSpinner" class="spinner hidden"></span>
+      </button>
+
+      <!-- Pricing options (visible when free limit reached) -->
+      <div id="pricingOptions" class="pricing-options hidden">
+        <p class="pricing-title">Upgrade to keep powering up</p>
+        <div class="pricing-cards">
+          <button class="pricing-card" id="planMonthly">
+            <span class="pricing-price">&#8369;199</span>
+            <span class="pricing-period">/month</span>
+            <span class="pricing-label">Flexible</span>
+          </button>
+          <button class="pricing-card pricing-card-best" id="planYearly">
+            <span class="pricing-save">Save 46%</span>
+            <span class="pricing-price">&#8369;1,299</span>
+            <span class="pricing-period">/year</span>
+            <span class="pricing-label">Best Value</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Powerup counter (hidden for admin/subscribed) -->
+      <div id="powerupStatus" class="powerup-status hidden">
+        <div class="powerup-dots" id="powerupDots">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+        <span id="powerupText">5 free powerups remaining</span>
+      </div>
+
+      <div id="subStatus" class="sub-status hidden"></div>
+      <div id="enhanceError" class="error-msg hidden"></div>
+
+      <div id="outputSection" class="output-section hidden">
+        <div class="output-meta">
+          <span class="label" style="margin-bottom:0">Enhanced JSON Prompt</span>
+          <button id="copyBtn" class="btn-copy">Copy JSON</button>
+        </div>
+        <pre id="jsonOutput" class="json-output"></pre>
+        <div id="copyConfirm" class="copy-confirm hidden">Copied!</div>
+      </div>
+    </section>
+
+    <!-- ── VIEW: Admin ─────────────────────────────────────────── -->
+    <section id="viewAdmin" class="view hidden">
+      <div class="admin-toolbar">
+        <span class="label" style="margin:0">Manage Users</span>
+        <span id="adminTotal" class="admin-count">0 users</span>
+      </div>
+      <div class="admin-add-row">
+        <input id="adminEmail" type="email" class="input" placeholder="new@email.com" />
+        <button id="adminAddBtn" class="btn-primary" style="white-space:nowrap;padding:9px 14px;">
+          <span id="adminAddLabel">Add</span>
+          <span id="adminAddSpinner" class="spinner hidden"></span>
+        </button>
+      </div>
+      <div id="adminAddError" class="error-msg hidden"></div>
+      <div id="adminUserList" class="admin-user-list">
+        <div class="admin-loading">Loading users…</div>
+      </div>
+    </section>
+
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
