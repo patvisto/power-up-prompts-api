@@ -59,4 +59,4 @@ async function enhancePrompt(userPrompt) {
   return parsed;
 }
 
-module.exports = { enhanceProm
+module.exports = { enhancePrompt };
