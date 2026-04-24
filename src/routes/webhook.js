@@ -58,7 +58,7 @@ router.post('/payment', async (req, res) => {
   }
 
   // Only process exact Power Up Prompts amounts (centavos)
-  const MONTHLY_AMOUNT = 22900;  // ₱229 (₱199 + fees)
+  const MONTHLY_AMOUNT = 32900;  // ₱329 (₱299 + fees)
   const YEARLY_AMOUNT  = 132900; // ₱1329 (₱1299 + fees)
 
   const amount =

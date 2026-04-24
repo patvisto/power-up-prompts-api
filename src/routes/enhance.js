@@ -24,8 +24,8 @@ router.post('/', requireAuth, enhanceLimiter, async (req, res) => {
   if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
     return res.status(400).json({ error: 'A prompt string is required.' });
   }
-  if (prompt.trim().length > 2000) {
-    return res.status(400).json({ error: 'Prompt must be 2000 characters or fewer.' });
+  if (prompt.trim().length > 6000) {
+    return res.status(400).json({ error: 'Prompt must be 6000 characters or fewer.' });
   }
 
   const email = req.user.email;
@@ -86,7 +86,13 @@ router.post('/', requireAuth, enhanceLimiter, async (req, res) => {
     }
 
     // Run the enhancement
-    const enhanced = await enhancePrompt(prompt.trim());
+    let enhanced;
+    try {
+      enhanced = await enhancePrompt(prompt.trim());
+    } catch (err) {
+      console.error('Groq error (subscribed):', err);
+      return res.status(503).json({ error: 'Enhancement service unavailable. Please try again in a moment.' });
+    }
 
     // Increment window counter
     windowCount += 1;
@@ -108,7 +114,13 @@ router.post('/', requireAuth, enhanceLimiter, async (req, res) => {
 
   // ── Admin: no limits at all ─────────────────────────────────────────────────
   if (isUnlimited) {
-    const enhanced = await enhancePrompt(prompt.trim());
+    let enhanced;
+    try {
+      enhanced = await enhancePrompt(prompt.trim());
+    } catch (err) {
+      console.error('Groq error (admin):', err);
+      return res.status(503).json({ error: 'Enhancement service unavailable. Please try again in a moment.' });
+    }
     return res.json({
       enhanced,
       powerups_used: null,
@@ -119,7 +131,13 @@ router.post('/', requireAuth, enhanceLimiter, async (req, res) => {
   }
 
   // ── Free user within limit ──────────────────────────────────────────────────
-  const enhanced = await enhancePrompt(prompt.trim());
+  let enhanced;
+  try {
+    enhanced = await enhancePrompt(prompt.trim());
+  } catch (err) {
+    console.error('Groq error (free):', err);
+    return res.status(503).json({ error: 'Enhancement service unavailable. Please try again in a moment.' });
+  }
   const newCount = user.powerups_used + 1;
   await supabase
     .from('users')
