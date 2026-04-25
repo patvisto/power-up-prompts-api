@@ -1,4 +1,12 @@
 require('dotenv').config();
+
+// Prevent unhandled promise rejections from crashing the server
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
 const path = require('path');
 const express = require('express');
 const cors = require('cors');

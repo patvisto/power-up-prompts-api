@@ -636,6 +636,28 @@ body {
   color: var(--error);
 }
 
+/* ── Admin search / filter ───────────────────────────────── */
+.admin-user-row--match {
+  border-color: rgba(22, 163, 74, 0.35);
+  background: rgba(22, 163, 74, 0.04);
+}
+
+mark.email-highlight {
+  background: rgba(22, 163, 74, 0.22);
+  color: #4ade80;
+  border-radius: 2px;
+  font-style: normal;
+  padding: 0 1px;
+}
+
+.admin-no-match {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: italic;
+  padding: 18px 0;
+}
+
 /* ── Password input with eye toggle ─────────────────────── */
 .input-wrap {
   position: relative;
@@ -708,15 +730,25 @@ body {
   padding: 10px 12px;
 }
 
-/* ── Utilities ───────────────────────────────────────────── */
-.hidden { display: none !important; }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ── Bulk Upload ─────────────────────────────────────────── */
+.bulk-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2e3347; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #3e4560; }
+.bulk-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.bulk-toggle::-webkit-details

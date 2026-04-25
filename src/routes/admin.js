@@ -150,4 +150,81 @@ router.post('/reset-pin/:email', requireAdmin, async (req, res) => {
   res.json({ message: `Recovery PIN cleared for ${email}.` });
 });
 
+// ── POST /api/admin/bulk ──────────────────────────────────────────────────────
+// Bulk-add emails and optionally grant subscriptions in one request.
+// Body: { emails: string[], grant_subscription?: boolean, plan?: 'monthly'|'yearly' }
+// Returns per-bucket results + a summary object.
+router.post('/bulk', requireAdmin, async (req, res) => {
+  const { emails, grant_subscription = false, plan = 'yearly' } = req.body;
+
+  if (!Array.isArray(emails) || emails.length === 0) {
+    return res.status(400).json({ error: 'emails array is required.' });
+  }
+  if (emails.length > 500) {
+    return res.status(400).json({ error: 'Maximum 500 emails per batch.' });
+  }
+
+  const results = { added: [], already_exists: [], invalid: [], errors: [] };
+
+  // Pre-compute subscription expiry once for the whole batch
+  let expiresAt = null;
+  if (grant_subscription) {
+    expiresAt = new Date();
+    if (plan === 'monthly') {
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+    } else {
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    }
+  }
+
+  for (const raw of emails) {
+    const email = String(raw || '').trim().toLowerCase();
+
+    // Basic validation — must have an @ and a dot after it
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      results.invalid.push(String(raw).trim() || '(empty)');
+      continue;
+    }
+
+    // Attempt insert
+    const { error: insertError } = await supabase
+      .from('users')
+      .insert({
+        email,
+        is_subscribed: grant_subscription ? true : false,
+        subscription_expires_at: expiresAt ? expiresAt.toISOString() : null
+      });
+
+    if (insertError) {
+      if (insertError.code === '23505') {
+        // Already in the DB — update subscription if requested
+        if (grant_subscription) {
+          await supabase
+            .from('users')
+            .update({ is_subscribed: true, subscription_expires_at: expiresAt.toISOString() })
+            .eq('email', email);
+        }
+        results.already_exists.push(email);
+      } else {
+        console.error(`Bulk insert error for ${email}:`, insertError.message);
+        results.errors.push(email);
+      }
+      continue;
+    }
+
+    results.added.push(email);
+  }
+
+  res.json({
+    results,
+    summary: {
+      total: emails.length,
+      added: results.added.length,
+      already_exists: results.already_exists.length,
+      invalid: results.invalid.length,
+      errors: results.errors.length
+    }
+  });
+});
+
 module.exports = router;

@@ -23,7 +23,7 @@
     </header>
 
     <!-- ── VIEW: Email ─────────────────────────────────────────── -->
-    <section id="viewEmail" class="view">
+    <section id="viewEmail" class="view hidden">
       <p class="view-desc">Enter your email to sign in or create an account.</p>
       <div class="field">
         <label class="label" for="emailInput">Email address</label>
@@ -154,8 +154,8 @@
         <label class="label" for="promptInput">Your prompt</label>
         <textarea id="promptInput" class="textarea"
           placeholder="e.g. fix my python function&#10;write a story about space&#10;explain machine learning to a beginner"
-          rows="4" spellcheck="true" maxlength="2000"></textarea>
-        <div class="char-count"><span id="charCount">0</span> / 2000</div>
+          rows="4" spellcheck="true" maxlength="6000"></textarea>
+        <div class="char-count"><span id="charCount">0</span> / 6000</div>
       </div>
 
       <!-- Powerup button (visible when limit NOT reached) -->
@@ -170,12 +170,12 @@
         <p class="pricing-title">Upgrade to keep powering up</p>
         <div class="pricing-cards">
           <button class="pricing-card" id="planMonthly">
-            <span class="pricing-price">&#8369;199</span>
+            <span class="pricing-price">&#8369;299</span>
             <span class="pricing-period">/month</span>
             <span class="pricing-label">Flexible</span>
           </button>
           <button class="pricing-card pricing-card-best" id="planYearly">
-            <span class="pricing-save">Save 46%</span>
+            <span class="pricing-save">Save 64%</span>
             <span class="pricing-price">&#8369;1,299</span>
             <span class="pricing-period">/year</span>
             <span class="pricing-label">Best Value</span>
@@ -222,12 +222,7 @@
         </button>
       </div>
       <div id="adminAddError" class="error-msg hidden"></div>
-      <div id="adminUserList" class="admin-user-list">
-        <div class="admin-loading">Loading users…</div>
-      </div>
-    </section>
 
-  </div>
-  <script src="popup.js"></script>
-</body>
-</html>
+      <!-- ── Bulk Upload ──────────────────────────────────── -->
+      <details class="bulk-section" id="bulkSection">
+    

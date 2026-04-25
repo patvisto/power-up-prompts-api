@@ -89,6 +89,7 @@ let isSubscribed = false;
 let subExpiresAt = null;
 let limitReached = false;
 let resetToken   = '';   // Short-lived JWT returned after PIN verification
+let allUsers     = [];   // Full user list for client-side search/filter
 
 // ── Fetch with retry ──────────────────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
@@ -152,6 +153,15 @@ function setLoading(btn, lbl, spin, on) {
 }
 function esc(str) {
   return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function highlightEmail(email, term) {
+  if (!term) return esc(email);
+  const lo  = email.toLowerCase();
+  const idx = lo.indexOf(term.toLowerCase());
+  if (idx === -1) return esc(email);
+  return esc(email.slice(0, idx)) +
+    `<mark class="email-highlight">${esc(email.slice(idx, idx + term.length))}</mark>` +
+    esc(email.slice(idx + term.length));
 }
 
 // ── Powerup UI ────────────────────────────────────────────────────────────────
@@ -559,6 +569,7 @@ async function runEnhance() {
       return;
     }
 
+    if (res.status === 503) { showError(enhanceError, data.error || 'Enhancement service temporarily unavailable. Please try again.'); return; }
     if (!res.ok) { showError(enhanceError, data.error || 'Enhancement failed.'); return; }
 
     if (data.powerups_used !== null && data.powerups_used !== undefined) {
@@ -630,25 +641,39 @@ async function loadAdminUsers() {
     });
     if (!res.ok) { adminUserList.innerHTML = '<div class="admin-loading">Failed to load users.</div>'; return; }
     const { users } = await res.json();
-    renderAdminUsers(users);
+    allUsers = users;
+    // Re-apply current filter (e.g. after adding a user mid-search)
+    const term = adminEmail.value.trim().toLowerCase();
+    const filtered = term ? allUsers.filter(u => u.email.includes(term)) : allUsers;
+    renderAdminUsers(filtered, term);
   } catch {
     adminUserList.innerHTML = '<div class="admin-loading">Could not reach server.</div>';
   }
 }
 
-function renderAdminUsers(users) {
-  adminTotal.textContent = `${users.length} user${users.length !== 1 ? 's' : ''}`;
+function renderAdminUsers(users, highlightTerm = '') {
+  const totalCount  = allUsers.length;
+  const isFiltering = highlightTerm && users.length !== totalCount;
+  adminTotal.textContent = isFiltering
+    ? `${users.length} of ${totalCount}`
+    : `${totalCount} user${totalCount !== 1 ? 's' : ''}`;
+
   if (users.length === 0) {
-    adminUserList.innerHTML = '<div class="admin-loading">No users yet.</div>'; return;
+    adminUserList.innerHTML = isFiltering
+      ? `<div class="admin-no-match">No users match "${esc(highlightTerm)}"</div>`
+      : '<div class="admin-loading">No users yet.</div>';
+    return;
   }
   adminUserList.innerHTML = users.map(u => {
-    const subValid = u.is_subscribed;
-    const powerupInfo = u.is_admin ? 'unlimited' : `${u.powerups_used ?? 0}/${FREE_LIMIT}`;
+    const subValid     = u.is_subscribed;
+    const powerupInfo  = u.is_admin ? 'unlimited' : `${u.powerups_used ?? 0}/${FREE_LIMIT}`;
+    const emailDisplay = highlightEmail(u.email, highlightTerm);
+    const isMatch      = !!(highlightTerm && u.email.includes(highlightTerm));
     return `
-      <div class="admin-user-row">
+      <div class="admin-user-row${isMatch ? ' admin-user-row--match' : ''}">
         <div class="admin-user-meta">
           <div class="admin-user-top">
-            <span class="admin-user-email">${esc(u.email)}</span>
+            <span class="admin-user-email">${emailDisplay}</span>
             ${u.is_admin ? '<span class="admin-badge">admin</span>' : ''}
             ${subValid ? '<span class="admin-badge sub-badge">subscribed</span>' : ''}
             ${u.email === userEmail ? '<span class="admin-you">you</span>' : ''}
@@ -685,6 +710,39 @@ function renderAdminUsers(users) {
   adminUserList.querySelectorAll('.btn-remove').forEach(btn =>
     btn.addEventListener('click', () => removeUser(btn.dataset.email))
   );
+}
+
+// ── Admin: Live search / filter ───────────────────────────────────────────────
+adminEmail.addEventListener('input', filterUsers);
+
+function filterUsers() {
+  const term = adminEmail.value.trim().toLowerCase();
+
+  // Reset any "already exists" warning styling
+  adminAddError.style.color = '';
+  adminAddError.style.background = '';
+  adminAddError.style.borderColor = '';
+
+  if (!term) {
+    clearError(adminAddError);
+    renderAdminUsers(allUsers);
+    return;
+  }
+
+  const filtered = allUsers.filter(u => u.email.includes(term));
+  renderAdminUsers(filtered, term);
+
+  // Show amber notice on exact match so admin knows not to re-add
+  const exactMatch = allUsers.find(u => u.email === term);
+  if (exactMatch) {
+    adminAddError.textContent = '↓ This email already exists — manage it below';
+    adminAddError.classList.remove('hidden');
+    adminAddError.style.color        = '#f59e0b';
+    adminAddError.style.background   = 'rgba(245,158,11,0.08)';
+    adminAddError.style.borderColor  = 'rgba(245,158,11,0.2)';
+  } else {
+    clearError(adminAddError);
+  }
 }
 
 // ── Admin: Add user ───────────────────────────────────────────────────────────
@@ -770,5 +828,5 @@ async function removeUser(email) {
   } catch { alert('Could not reach server.'); }
 }
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
-init();
+// ── Bulk Upload ───────────────────────────────────────────────────────────────
+const bulkEmails      

@@ -186,7 +186,7 @@
     }, 4000);
   }
 
-  // ── Handle enhance click ───────────────────────────────────────────────────
+  // ── Handle enhance click — calls API directly (avoids dead service worker) ───
   async function handleEnhance() {
     const text = getSelectedText();
     if (!text || text.trim().length === 0) return;
@@ -195,22 +195,70 @@
     floatBtn.innerHTML = '<span class="pup-spinner"></span> Enhancing…';
 
     try {
-      const result = await chrome.runtime.sendMessage({
-        type: 'enhance',
-        prompt: text.trim()
-      });
+      const API_BASE = 'https://power-up-prompts-api.onrender.com';
+      const { token } = await chrome.storage.local.get(['token']);
 
-      if (result.success) {
-        replaceSelectedText(result.enhanced);
+      if (!token) {
         hideButton();
-        showToast('Prompt enhanced!', 'success');
-      } else {
-        hideButton();
-        showToast(result.message || 'Enhancement failed.', 'error');
+        showToast('Please sign in via the Power Up Prompts extension first.', 'error');
+        return;
       }
+
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 55000);
+      let res;
+      try {
+        res = await fetch(`${API_BASE}/api/enhance`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ prompt: text.trim() }),
+          signal: ctrl.signal
+        });
+      } finally {
+        clearTimeout(t);
+      }
+
+      const data = await res.json();
+
+      if (res.status === 401) {
+        hideButton();
+        showToast('Session expired. Please sign in again.', 'error');
+        return;
+      }
+      if (res.status === 402 || data.error === 'limit_reached') {
+        hideButton();
+        showToast('Free powerups used up. Open the extension to subscribe.', 'error');
+        return;
+      }
+      if (res.status === 429) {
+        hideButton();
+        showToast(data.message || 'Limit reached. Please wait.', 'error');
+        return;
+      }
+      if (!res.ok) {
+        hideButton();
+        showToast(data.error || 'Enhancement failed.', 'error');
+        return;
+      }
+
+      // Update local powerup state
+      if (data.powerups_used !== null && data.powerups_used !== undefined) {
+        chrome.storage.local.set({ powerupsUsed: data.powerups_used });
+      }
+      if (data.is_subscribed !== undefined) {
+        chrome.storage.local.set({ isSubscribed: data.is_subscribed });
+      }
+
+      replaceSelectedText(JSON.stringify(data.enhanced, null, 2));
+      hideButton();
+      showToast('Prompt enhanced!', 'success');
+
     } catch (e) {
       hideButton();
-      showToast('Could not connect to Power Up Prompts.', 'error');
+      showToast('Could not reach the server. Check your connection.', 'error');
     }
   }
 
